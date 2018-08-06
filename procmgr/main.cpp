@@ -706,39 +706,23 @@ static void startMgrProcessThread()
 	string DistributedInstall = "y";
 
 	try
-        {
-		oam.getSystemConfig("DistributedInstall", DistributedInstall);
-        }
-        catch (...) 
 	{
-                log.writeLog(__LINE__, "ERROR: get DistributedInstall", LOG_TYPE_ERROR);
+	oam.getSystemConfig("DistributedInstall", DistributedInstall);
+	}
+	catch (...) 
+	{
+		log.writeLog(__LINE__, "ERROR: get DistributedInstall", LOG_TYPE_ERROR);
 	}
 
-	//Send out a start service just to make sure Columnstore is runing on remote nodes
-	//note this only works for systems with ssh-keys
-/*	for( unsigned int i = 0 ; i < systemmoduletypeconfig.moduletypeconfig.size(); i++)
-	{
-		int moduleCount = systemmoduletypeconfig.moduletypeconfig[i].ModuleCount;
-		if( moduleCount == 0)
-			continue;
-
-		DeviceNetworkList::iterator pt = systemmoduletypeconfig.moduletypeconfig[i].ModuleNetworkList.begin();
-		for ( ; pt != systemmoduletypeconfig.moduletypeconfig[i].ModuleNetworkList.end(); pt++)
-		{
-		      //skip OAM Parent module
-		      if ( (*pt).DeviceName == config.moduleName() )
-			      continue;
-
-		      HostConfigList::iterator pt1 = (*pt).hostConfigList.begin();
-		      for( ; pt1 != (*pt).hostConfigList.end() ; pt1++)
-		      {
-			      //run remote command script
-			      string cmd = startup::StartUp::installDir() + "/bin/remote_command.sh " + (*pt1).IPAddr + " ssh '" + startup::StartUp::installDir() + "/bin/columnstore restart' 0";
-			      system(cmd.c_str());
-		      }
-		}
+	//validate that the DDL/DMLProc IP addresses match and are assigned to the Primary UM Module
+	string PrimaryUMModuleName;
+	try {
+		oam.getSystemConfig("PrimaryUMModuleName", PrimaryUMModuleName);
 	}
-*/	
+	catch(...) {}
+
+	processManager.setPMProcIPs(PrimaryUMModuleName);
+
 	//distribute system and process config files
 	processManager.distributeConfigFile("system");
 	processManager.distributeConfigFile("system", "ProcessConfig.xml");

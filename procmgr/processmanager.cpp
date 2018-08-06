@@ -6590,6 +6590,15 @@ void startSystemThread(oam::DeviceNetworkList Devicenetworklist)
 	else
 		processManager.setSystemState(oam::MAN_INIT);
 
+	//validate that the DDL/DMLProc IP addresses match and are assigned to the Primary UM Module
+	string PrimaryUMModuleName;
+	try {
+		oam.getSystemConfig("PrimaryUMModuleName", PrimaryUMModuleName);
+	}
+	catch(...) {}
+
+	processManager.setPMProcIPs(PrimaryUMModuleName);
+
 	//validate the dbroots assignments
 	//make sure no 1 ID is assigned to 2 PMs
 	//and a dbroot not assigned to a DISABLED PM
@@ -8101,12 +8110,12 @@ bool ProcessManager::makeXMInittab(std::string moduleName, std::string systemID,
 	return true;
 }
 
-
 /******************************************************************************************
 * @brief	setPMProcIPs
 *
-* purpose:	Updates the Columnstore.xml file for DDL/DMLProc IPs during PM switchover
-*
+* purpose:	Updates the Columnstore.xml file for DDL/DMLProc IPs
+*			Set DDL/DML to moduleName
+* 			If moduleName is unassigned, make sure DDL/DML IPAddrs match
 *
 ******************************************************************************************/
 int ProcessManager::setPMProcIPs( std::string moduleName, std::string processName )
@@ -8118,6 +8127,11 @@ int ProcessManager::setPMProcIPs( std::string moduleName, std::string processNam
 	ModuleConfig moduleconfig;
 
 	log.writeLog(__LINE__, "setPMProcIPs called for " + moduleName, LOG_TYPE_DEBUG);
+
+	// if module name is unassigned, default to local node
+	// for single server install
+	if ( moduleName == oam::UnassignedName)
+		moduleName = config.moduleName();
 
 	pthread_mutex_lock(&THREAD_LOCK);
 

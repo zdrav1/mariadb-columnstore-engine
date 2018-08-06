@@ -3112,7 +3112,7 @@ int main(int argc, char *argv[])
 	{
             if ( password.empty() )
             {
-                cout << endl;
+				cout << endl << "===== System Password =====" << endl << endl;
                 cout << "Next step is to enter the password to access the other Servers." << endl;
                 cout << "This is either your password or you can default to using a ssh key" << endl;
                 cout << "If using a password, the password needs to be the same on all Servers." << endl << endl;
