@@ -467,9 +467,9 @@ public:
 	std::string sendMsgProcMon1( std::string module, messageqcpp::ByteStream msg, int requestID );
 
 	/*
-	* Updates the Columnstore.xml file for DDL/DMLProc IPs during PM switchover
+	* Updates the Columnstore.xml file for DDL/DMLProc IPs
 	*/
-	int setPMProcIPs( std::string moduleName, std::string processName = oam::UnassignedName);
+	int setUMProcIPs( std::string moduleName);
 
 	/*
 	* OAM Parent Module change-over

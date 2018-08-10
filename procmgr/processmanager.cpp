@@ -1722,7 +1722,11 @@ void processMSG(messageqcpp::IOSocket* cfIos)
 					if( target.find("DDLProc") == 0 || 
 						target.find("DMLProc") == 0 ) {
 
-						processManager.setPMProcIPs(moduleName, target);
+						processManager.setUMProcIPs(moduleName);
+
+						//distribute config file
+						processManager.distributeConfigFile("system");
+						sleep(1);
 					}
 
 					if (ackIndicator)
@@ -4311,7 +4315,7 @@ int ProcessManager::restartProcessType( std::string processName, std::string ski
 						try {
 							oam.setSystemConfig("PrimaryUMModuleName", systemprocessstatus.processstatus[i].Module);
 
-							processManager.setPMProcIPs(systemprocessstatus.processstatus[i].Module);
+							processManager.setUMProcIPs(systemprocessstatus.processstatus[i].Module);
 
 							//distribute config file
 							processManager.distributeConfigFile("system");
@@ -4335,7 +4339,10 @@ int ProcessManager::restartProcessType( std::string processName, std::string ski
 						oam.getProcessStatus(processName, systemprocessstatus.processstatus[i].Module, procstat);
 						if ( (processName.find("DDLProc") == 0 || processName.find("DMLProc") == 0) )
 						{
-							processManager.setPMProcIPs(systemprocessstatus.processstatus[i].Module, processName);
+							processManager.setUMProcIPs(systemprocessstatus.processstatus[i].Module);
+
+							//distribute config file
+							processManager.distributeConfigFile("system");
 							break;
 						}
 					}
@@ -6590,15 +6597,6 @@ void startSystemThread(oam::DeviceNetworkList Devicenetworklist)
 	else
 		processManager.setSystemState(oam::MAN_INIT);
 
-	//validate that the DDL/DMLProc IP addresses match and are assigned to the Primary UM Module
-	string PrimaryUMModuleName;
-	try {
-		oam.getSystemConfig("PrimaryUMModuleName", PrimaryUMModuleName);
-	}
-	catch(...) {}
-
-	processManager.setPMProcIPs(PrimaryUMModuleName);
-
 	//validate the dbroots assignments
 	//make sure no 1 ID is assigned to 2 PMs
 	//and a dbroot not assigned to a DISABLED PM
@@ -6806,7 +6804,7 @@ void startSystemThread(oam::DeviceNetworkList Devicenetworklist)
 			}
 			catch(...) {}
 
-			processManager.setPMProcIPs(config.OAMParentName());
+			processManager.setUMProcIPs(config.OAMParentName());
 		}
 
 		//distribute config file
@@ -6873,7 +6871,7 @@ void startSystemThread(oam::DeviceNetworkList Devicenetworklist)
 						}
 						catch(...) {}
 
-						processManager.setPMProcIPs(moduleName);
+						processManager.setUMProcIPs(moduleName);
 
 						//distribute config file
 						processManager.distributeConfigFile("system");
@@ -7561,7 +7559,7 @@ void ProcessManager::checkSimplexModule(std::string moduleName)
 												//process DDL/DMLProc
 												if ( systemprocessconfig.processconfig[j].ProcessName == "DDLProc")
 												{
-													setPMProcIPs((*pt).DeviceName);
+													setUMProcIPs((*pt).DeviceName);
 													
 													log.writeLog(__LINE__, "Set Primary UM Module = " + (*pt).DeviceName, LOG_TYPE_DEBUG);
 
@@ -8110,15 +8108,15 @@ bool ProcessManager::makeXMInittab(std::string moduleName, std::string systemID,
 	return true;
 }
 
+
 /******************************************************************************************
-* @brief	setPMProcIPs
+* @brief	setUMProcIPs
 *
 * purpose:	Updates the Columnstore.xml file for DDL/DMLProc IPs
-*			Set DDL/DML to moduleName
-* 			If moduleName is unassigned, make sure DDL/DML IPAddrs match
+*
 *
 ******************************************************************************************/
-int ProcessManager::setPMProcIPs( std::string moduleName, std::string processName )
+int ProcessManager::setUMProcIPs( std::string moduleName)
 {
 	ProcessLog log;
 	Configuration config;
@@ -8126,107 +8124,57 @@ int ProcessManager::setPMProcIPs( std::string moduleName, std::string processNam
 	Oam oam;
 	ModuleConfig moduleconfig;
 
-	log.writeLog(__LINE__, "setPMProcIPs called for " + moduleName, LOG_TYPE_DEBUG);
+	log.writeLog(__LINE__, "setUMProcIPs called for " + moduleName, LOG_TYPE_DEBUG);
 
-	// if module name is unassigned, default to local node
-	// for single server install
-	if ( moduleName == oam::UnassignedName)
-		moduleName = config.moduleName();
+	//get Module IP address
+	string moduleIpAdd;
+	try
+	{
+		oam.getSystemConfig(moduleName, moduleconfig);
+		HostConfigList::iterator pt1 = moduleconfig.hostConfigList.begin();
+		moduleIpAdd = (*pt1).IPAddr;
+
+		log.writeLog(__LINE__, "setUMProcIPs: module ip = " + moduleIpAdd, LOG_TYPE_DEBUG);	
+	}
+	catch (exception& ex)
+	{
+		string error = ex.what();
+		log.writeLog(__LINE__, "setUMProcIPs: EXCEPTION ERROR on getSystemConfig: " + error, LOG_TYPE_ERROR);
+		return API_FAILURE;
+	}
+	catch(...)
+	{
+		log.writeLog(__LINE__, "setUMProcIPs: EXCEPTION ERROR on getSystemConfig: Caught unknown exception!", LOG_TYPE_ERROR);
+		return API_FAILURE;
+	}
 
 	pthread_mutex_lock(&THREAD_LOCK);
 
-	if ( processName == oam::UnassignedName || processName == "DDLProc")
-	{
-		for ( int i = 1 ; i < 5 ; i ++)
-		{
-			//get Module IP address
-			try
-			{
-				oam.getSystemConfig(moduleName, moduleconfig);
-				HostConfigList::iterator pt1 = moduleconfig.hostConfigList.begin();
-				string ipAdd = (*pt1).IPAddr;
-		
-				Config* sysConfig2 = Config::makeConfig();
-			
-				//check if IP address if different than current value, don't update if it is
-				if ( sysConfig2->getConfig("DDLProc", "IPAddr") == ipAdd ) {
-					log.writeLog(__LINE__, "setPMProcIPs for DDLProc: no update needed", LOG_TYPE_DEBUG);	
-					break;
-				}	
-		
-				sysConfig2->setConfig("DDLProc", "IPAddr", ipAdd);
-				try {
-					sysConfig2->write();
-	
-					pthread_mutex_unlock(&THREAD_LOCK);
-	
-					log.writeLog(__LINE__, "setPMProcIPs: DDLProc to " + ipAdd, LOG_TYPE_DEBUG);
-				}
-				catch(...)
-				{
-					log.writeLog(__LINE__, "setPMProcIPs - ERROR: sysConfig->write", LOG_TYPE_ERROR);
-				}
-			}
-			catch (exception& ex)
-			{
-				string error = ex.what();
-				log.writeLog(__LINE__, "setPMProcIPs: EXCEPTION ERROR on getSystemConfig: " + error, LOG_TYPE_ERROR);
-			}
-			catch(...)
-			{
-				log.writeLog(__LINE__, "setPMProcIPs: EXCEPTION ERROR on getSystemConfig: Caught unknown exception!", LOG_TYPE_ERROR);
-			}
-		}
-	}
+	Config* sysConfig5 = Config::makeConfig();
 
-	if ( processName == oam::UnassignedName || processName == "DMLProc")
+	for ( int i = 1 ; i < 5 ; i ++)
 	{
-		for ( int i = 1 ; i < 5 ; i ++)
+		log.writeLog(__LINE__, "setUMProcIPs: DDLProc ip = " + sysConfig5->getConfig("DDLProc", "IPAddr"), LOG_TYPE_DEBUG);	
+
+		sysConfig5->setConfig("DDLProc", "IPAddr", moduleIpAdd);
+
+		log.writeLog(__LINE__, "setUMProcIPs: DMLProc ip = " + sysConfig5->getConfig("DMLProc", "IPAddr"), LOG_TYPE_DEBUG);	
+
+		sysConfig5->setConfig("DMLProc", "IPAddr", moduleIpAdd);
+
+		try {
+			sysConfig5->write();
+
+			log.writeLog(__LINE__, "setUMProcIPs: DDL/DMLProc to " + moduleIpAdd, LOG_TYPE_DEBUG);
+			break;
+		}
+		catch(...)
 		{
-			//get Module IP address
-			try
-			{
-				oam.getSystemConfig(moduleName, moduleconfig);
-				HostConfigList::iterator pt1 = moduleconfig.hostConfigList.begin();
-				string ipAdd = (*pt1).IPAddr;
-		
-				Config* sysConfig2 = Config::makeConfig();
-			
-				//check if IP address if different than current value, don't update if it is
-				if ( sysConfig2->getConfig("DMLProc", "IPAddr") == ipAdd ) {
-					log.writeLog(__LINE__, "setPMProcIPs for DMLProc: no update needed, exiting function", LOG_TYPE_DEBUG);	
-					pthread_mutex_unlock(&THREAD_LOCK);
-					return API_SUCCESS;
-				}	
-		
-				sysConfig2->setConfig("DMLProc", "IPAddr", ipAdd);
-				try {
-					sysConfig2->write();
-	
-					pthread_mutex_unlock(&THREAD_LOCK);
-	
-					log.writeLog(__LINE__, "setPMProcIPs: DMLProc to " + ipAdd, LOG_TYPE_DEBUG);
-				}
-				catch(...)
-				{
-					log.writeLog(__LINE__, "setPMProcIPs - ERROR: sysConfig->write", LOG_TYPE_ERROR);
-				}
-			}
-			catch (exception& ex)
-			{
-				string error = ex.what();
-				log.writeLog(__LINE__, "setPMProcIPs: EXCEPTION ERROR on getSystemConfig: " + error, LOG_TYPE_ERROR);
-			}
-			catch(...)
-			{
-				log.writeLog(__LINE__, "setPMProcIPs: EXCEPTION ERROR on getSystemConfig: Caught unknown exception!", LOG_TYPE_ERROR);
-			}
+			log.writeLog(__LINE__, "setUMProcIPs - ERROR: sysConfig->write", LOG_TYPE_ERROR);
 		}
 	}
 
 	pthread_mutex_unlock(&THREAD_LOCK);
-
-	//log.writeLog(__LINE__, "setPMProcIPs failed", LOG_TYPE_DEBUG);
 
 	return API_SUCCESS;
 
@@ -8778,14 +8726,15 @@ int ProcessManager::switchParentOAMModule(std::string newActiveModuleName)
 
 		if ( config.ServerInstallType() == oam::INSTALL_COMBINE_DM_UM_PM )
 		{
-			//set DDL/DMLproc IPs to new module
-			setPMProcIPs(newActiveModuleName);
 
 			//set Primary UM to new module
 			try {
 				oam.setSystemConfig("PrimaryUMModuleName", newActiveModuleName);
 			}
 			catch(...) {}
+
+			//set DDL/DMLproc IPs to new module
+			setUMProcIPs(newActiveModuleName);
 		}
 
 		log.writeLog(__LINE__, "Columnstore.xml entries update to local IP address of " + newActiveIPaddr, LOG_TYPE_DEBUG);
@@ -9392,14 +9341,19 @@ int ProcessManager::OAMParentModuleChange()
 	}
 
 	if ( config.ServerInstallType() == oam::INSTALL_COMBINE_DM_UM_PM ) {
-		//set DDL/DMLproc IPs to local module
-		setPMProcIPs(config.moduleName());
-
 		try {
 			oam.setSystemConfig("PrimaryUMModuleName", config.moduleName());
 		}
 		catch(...) {}
+
+		//set DDL/DMLproc IPs to local module
+		setUMProcIPs(config.moduleName());
+
+		//distribute config file
+		processManager.distributeConfigFile("system");
+		sleep(1);
 	}
+
 
 	//send message to local Process Monitor for OAM Parent Activation
 	ByteStream msg;
