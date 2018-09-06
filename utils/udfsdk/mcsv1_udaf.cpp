@@ -36,6 +36,7 @@ UDAF_MAP UDAFMap::fm;
 #include "ssq.h"
 #include "median.h"
 #include "avg_mode.h"
+#include "distinct_count.h"
 UDAF_MAP& UDAFMap::getMap()
 {
 	if (fm.size() > 0)
@@ -51,7 +52,7 @@ UDAF_MAP& UDAFMap::getMap()
 	fm["ssq"] = new ssq();
 	fm["median"] = new median();
 	fm["avg_mode"] = new avg_mode();
-	
+	fm["distinct_count"] = new distinct_count();
 	return fm;
 }
 

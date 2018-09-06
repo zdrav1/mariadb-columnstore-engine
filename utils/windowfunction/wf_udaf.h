@@ -21,7 +21,7 @@
 #ifndef UTILS_WF_UDAF_H
 #define UTILS_WF_UDAF_H
 
-#include <set>
+#include <tr1/unordered_map>
 #include "windowfunctiontype.h"
 #include "mcsv1_udaf.h"
 
@@ -50,6 +50,7 @@ public:
 	mcsv1sdk::mcsv1Context& getContext() {return fUDAFContext;}
 	bool getInterrupted() {return bInterrupted;}
 	bool getInterruptedPtr() {return &bInterrupted;}
+	void setDistinct(bool d = true) {fDistinct=d;}
 	bool getDistinct() {return fDistinct;}
 
 protected:
@@ -59,8 +60,9 @@ protected:
 	bool bInterrupted;                    // Shared by all the threads
 	bool fDistinct;
 	bool bRespectNulls;                   // respect null | ignore null
-	bool bHasDropValue;                   // Set to false when we discover the UDAnF doesn't implement dropValue. 	
-	std::set<T> fSet;                     // To hold distinct values
+	bool bHasDropValue;                   // Set to false when we discover the UDAnF doesn't implement dropValue.
+	typedef std::tr1::unordered_map<T, uint32_t> DistinctMap;
+	DistinctMap fDistinctMap;             // To hold distinct values and their counts
 	static_any::any fValOut;              // The return value
 
 public:

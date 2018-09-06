@@ -64,6 +64,8 @@ boost::shared_ptr<WindowFunctionType> WF_udaf<T>::makeFunction(int id, const str
 		case CalpontSystemCatalog::INT:
 		case CalpontSystemCatalog::BIGINT:
 		case CalpontSystemCatalog::DECIMAL:
+		case CalpontSystemCatalog::DATE:
+		case CalpontSystemCatalog::DATETIME:
 		{
 			func.reset(new WF_udaf<int64_t>(id, name, context));
 			break;
@@ -136,7 +138,7 @@ template<typename T>
 void WF_udaf<T>::resetData()
 {
 	getContext().getFunction()->reset(&getContext());
-	fSet.clear();
+	fDistinctMap.clear();
 	WindowFunctionType::resetData();
 }
 
@@ -147,8 +149,12 @@ void WF_udaf<T>::parseParms(const std::vector<execplan::SRCP>& parms)
 	// parms[1]: respect null | ignore null
 	ConstantColumn* cc = dynamic_cast<ConstantColumn*>(parms[1].get());
 	idbassert(cc != NULL);
-	bool isNull = false;  // dummy, harded coded
+	bool isNull = false;  // dummy, hard coded
 	bRespectNulls = (cc->getIntVal(fRow, isNull) > 0);
+    if (getContext().getRunFlag(mcsv1sdk::UDAF_DISTINCT))
+    {
+        setDistinct();
+    }
 }
 
 template<typename T>
@@ -159,7 +165,6 @@ bool WF_udaf<T>::dropValues(int64_t b, int64_t e)
 		// Save work if we discovered dropValue is not implemented in the UDAnF
 		return false;
 	}
-
 	mcsv1sdk::mcsv1_UDAF::ReturnCode rc;
 	uint64_t colOut = fFieldIndex[0];
 	uint64_t colIn = fFieldIndex[1];
@@ -193,10 +198,23 @@ bool WF_udaf<T>::dropValues(int64_t b, int64_t e)
 		getValue(colIn, valIn, &datum.dataType);
 
 		// Check for distinct, if turned on.
-		// TODO: when we impliment distinct, we need to revist this.
-		if ((fDistinct) || (fSet.find(valIn) != fSet.end()))
+		if (fDistinct)
 		{
-			continue;
+            typename DistinctMap::iterator distinct = fDistinctMap.find(valIn);
+            if (distinct == fDistinctMap.end())
+            {
+                // Oops. This shouldn't happen
+                continue;
+            }
+            --(*distinct).second;
+            if ((*distinct).second > 0)
+            {
+                // This isn't the last duplicate, so ignore it.
+                continue;
+            }
+            // This is the last one, so remove it from the map
+            // and continue on to dropValue;
+            fDistinctMap.erase(valIn);
 		}
 
 		datum.columnData = valIn;
@@ -370,6 +388,8 @@ void WF_udaf<T>::SetUDAFValue(static_any::any& valOut, int64_t colOut,
 		case execplan::CalpontSystemCatalog::BIGINT:
 		case execplan::CalpontSystemCatalog::DECIMAL:
 		case execplan::CalpontSystemCatalog::UDECIMAL:
+		case execplan::CalpontSystemCatalog::DATE:
+		case execplan::CalpontSystemCatalog::DATETIME:
 			setValue(colDataType, b, e, c, &intOut);
 			break;
 		case execplan::CalpontSystemCatalog::UTINYINT:
@@ -377,8 +397,6 @@ void WF_udaf<T>::SetUDAFValue(static_any::any& valOut, int64_t colOut,
 		case execplan::CalpontSystemCatalog::UMEDINT:
 		case execplan::CalpontSystemCatalog::UINT:
 		case execplan::CalpontSystemCatalog::UBIGINT:
-		case execplan::CalpontSystemCatalog::DATE:
-		case execplan::CalpontSystemCatalog::DATETIME:
 			setValue(colDataType, b, e, c, &uintOut);
 			break;
 		case execplan::CalpontSystemCatalog::FLOAT:
@@ -461,13 +479,22 @@ void WF_udaf<T>::operator()(int64_t b, int64_t e, int64_t c)
 			getValue(colIn, valIn, &datum.dataType);
 
 			// Check for distinct, if turned on.
-			if ((fDistinct) || (fSet.find(valIn) != fSet.end()))
-			{
-				continue;
-			}
-
 			if (fDistinct)
-				fSet.insert(valIn);
+            {
+                std::pair<T, uint32_t> val = make_pair(valIn, 1);
+                // Unordered_map will not insert a duplicate key (valIn).
+                // If it doesn't insert, the original pair will be returned
+                // in distinct.first and distinct.second will be a bool --
+                // true if newly inserted, false if a duplicate.
+                std::pair<typename DistinctMap::iterator, bool> distinct;
+                distinct = fDistinctMap.insert(val);
+                if (distinct.second == false)
+                {
+                    // This is a duplicate: increment the count
+                    ++(*distinct.first).second;
+                    continue;
+                }
+            }
 
 			datum.columnData = valIn;
 
