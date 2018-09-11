@@ -3100,6 +3100,7 @@ inline void joinTables(JobStepVector& joinSteps, TableInfoMap& tableInfoMap, Job
 						vector<uint32_t>& joinOrder, const bool overrideLargeSideEstimate)
 {
 	uint32_t largestTable = getLargestTable(jobInfo, tableInfoMap, overrideLargeSideEstimate);
+    cerr << "joinTables(): largestTable oid: " << largestTable << endl;
 	if (jobInfo.outerOnTable.size() == 0)
 		joinToLargeTable(largestTable, tableInfoMap, jobInfo, joinOrder);
 	else

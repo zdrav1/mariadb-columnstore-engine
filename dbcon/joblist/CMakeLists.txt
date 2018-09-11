@@ -58,6 +58,7 @@ set(joblist_LIB_SRCS
     windowfunctionstep.cpp)
 
 #libjoblist_la_CXXFLAGS = $(march_flags) $(AM_CXXFLAGS)
+add_definitions(-DJLF_DEBUG)
 
 add_library(joblist SHARED ${joblist_LIB_SRCS})
 
