@@ -113,10 +113,12 @@ if [ -d $installdir/mysql/db/calpontsys ]; then
 		$installdir/mysql/mysql-Columnstore stop
 		sleep 2
 	fi
+else # If DB doesnt exist
+
+	### Don't give the user the notes, we'll fix them ourselves...
+	$installdir/mysql/scripts/mysql_install_db --rpm --user=$user --defaults-extra-file=$installdir/mysql/my.cnf --basedir=$installdir/mysql >/dev/null
 fi
 
-### Don't give the user the notes, we'll fix them ourselves...
-$installdir/mysql/scripts/mysql_install_db --rpm --user=$user --defaults-extra-file=$installdir/mysql/my.cnf --basedir=$installdir/mysql >/dev/null
 # Change permissions again to fix any new files.
 chown -R $user:$user $mysql_datadir
 
