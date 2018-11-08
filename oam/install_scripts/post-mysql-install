@@ -123,16 +123,8 @@ if [ -x $installdir/mysql/mysql-Columnstore ]; then
 		fi
 	fi
 
-# If DB exist, run upgrade script if it exist
-if [ -d $installdir/mysql/db/calpontsys ]; then
-
-	if [ -x $installdir/mysql/mysql-Columnstore ]; then
-		# Restart in the same way that mysqld will be started normally.
-		$installdir/mysql/mysql-Columnstore stop >/dev/null 2>&1
-		sleep 2
-		$installdir/mysql/mysql-Columnstore start
-
-		sleep 5
+	# If DB exist, run upgrade script if it exist
+	if [ -d $installdir/mysql/db/calpontsys ]; then
 		
 		# Run MariaDB (mysql) upgrade script (second time), if it exist
 		if [ -x $installdir/mysql/bin/mysql_upgrade ]; then
