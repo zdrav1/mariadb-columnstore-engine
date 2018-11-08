@@ -11,7 +11,6 @@ user=mysql
 tmpdir="/tmp"
 
 password=" "
-pwprompt=
 
 if [ $EUID -ne 0 ]; then
 	USER=`whoami 2>/dev/null`

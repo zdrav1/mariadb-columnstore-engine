@@ -45,6 +45,8 @@ prefix=/usr/local
 installdir=$prefix/mariadb/columnstore
 rpmmode=install
 tmpdir="/tmp"
+password=" "
+
 
 for arg in "$@"; do
 	if [ $(expr -- "$arg" : '--prefix=') -eq 9 ]; then
@@ -55,6 +57,8 @@ for arg in "$@"; do
 	elif [ $(expr -- "$arg" : '--installdir=') -eq 13 ]; then
 		installdir="$(echo $arg | awk -F= '{print $2}')"
 		prefix=$(dirname $installdir)
+	elif [ $(expr -- "$arg" : '--password=') -eq 11 ]; then
+		password="$(echo $arg | awk -F= '{print $2}')"
 	elif [ $(expr -- "$arg" : '--tmpdir=') -eq 9 ]; then
 		tmpdir="$(echo $arg | awk -F= '{print $2}')"
 	else
@@ -116,6 +120,40 @@ if [ -x $installdir/mysql/mysql-Columnstore ]; then
 			$installdir/mysql/mysql-Columnstore stop
 			sleep 2
 			exit 2;
+		fi
+	fi
+
+# If DB exist, run upgrade script if it exist
+if [ -d $installdir/mysql/db/calpontsys ]; then
+
+	if [ -x $installdir/mysql/mysql-Columnstore ]; then
+		# Restart in the same way that mysqld will be started normally.
+		$installdir/mysql/mysql-Columnstore stop >/dev/null 2>&1
+		sleep 2
+		$installdir/mysql/mysql-Columnstore start
+
+		sleep 5
+		
+		# Run MariaDB (mysql) upgrade script (second time), if it exist
+		if [ -x $installdir/mysql/bin/mysql_upgrade ]; then
+			echo "Running mysql_upgrade script with force"
+			if [[ ${password} == " " ]]; then
+				$installdir/mysql/bin/mysql_upgrade --defaults-file=$installdir/mysql/my.cnf --force > $tmpdir/mysql_upgrade.log
+				if [ $? -ne 0 ]; then
+					echo "ERROR: mysql_upgrade failure, check $tmpdir/mysql_upgrade.log"
+					$installdir/mysql/mysql-Columnstore stop
+					sleep 2
+					exit 2;
+				fi
+			else
+				$installdir/mysql/bin/mysql_upgrade --defaults-file=$installdir/mysql/my.cnf --force --password=$password  > $tmpdir/mysql_upgrade.log
+				if [ $? -ne 0 ]; then
+					echo "ERROR: mysql_upgrade failure, check $tmpdir/mysql_upgrade.log"
+					$installdir/mysql/mysql-Columnstore stop
+					sleep 2
+					exit 2;
+				fi
+			fi
 		fi
 	fi
 

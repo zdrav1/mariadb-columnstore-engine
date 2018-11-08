@@ -289,7 +289,7 @@ void mysqlSetup()
             HOME = p;
     }
     
-    cmd = installDir + "/bin/post-mysql-install --installdir=" + installDir + " --tmpdir=" + tmpDir + " > " + tmpDir + "/post-mysql-install.log";
+    cmd = installDir + "/bin/post-mysql-install --installdir=" + installDir + " " + passwordOption + " --tmpdir=" + tmpDir + " > " + tmpDir + "/post-mysql-install.log";
     rtnCode = system(cmd.c_str());
 
     if (WEXITSTATUS(rtnCode) == 2)
