@@ -31,8 +31,6 @@
 #include <ctype.h>
 #include <cfloat>
 
-#include <boost/algorithm/string/predicate.hpp>
-
 #include "we_bulkload.h"
 #include "we_bulkloadbuffer.h"
 #include "we_brm.h"
@@ -370,18 +368,11 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
                 {
                     errno = 0;
 
-                    if (iequals(field, "true"))
-                    {
-                        fVal = 1;
-                    }
-                    else
-                    {
 #ifdef _MSC_VER
-                        fVal = (float)strtod( field, 0 );
+                    fVal = (float)strtod( field, 0 );
 #else
-                        fVal = strtof( field, 0 );
+                    fVal = strtof( field, 0 );
 #endif
-                    }
 
                     if (errno == ERANGE)
                     {
@@ -413,6 +404,11 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
                         {
                             fVal = minFltSat;
                             bufStats.satCount++;
+                        }
+                        if ( fVal == 0
+                        && isTrueWord(const_cast<const char*>(field), fieldLength) )
+                        {
+                            fVal = 1;
                         }
                     }
                 }
@@ -474,14 +470,7 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
                 {
                     errno = 0;
 
-                    if (iequals(field, "true"))
-                    {
-                        dVal = 1;
-                    }
-                    else
-                    {
-                        dVal = strtod(field, 0);
-                    }
+                    dVal = strtod(field, 0);
 
                     if (errno == ERANGE)
                     {
@@ -513,6 +502,11 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
                         {
                             dVal = column.fMinDblSat;
                             bufStats.satCount++;
+                        }
+                        else if (dVal == 0
+                            && isTrueWord(const_cast<const char*>(field), fieldLength))
+                        {
+                            dVal = 1;
                         }
                     }
                 }
@@ -629,12 +623,6 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
                 }
                 else
                 {
-                    if (iequals(field, "true"))
-                    {
-                        strcpy(field, "1");
-                        fieldLength = 1;
-                    }
-
                     if ( (column.dataType == CalpontSystemCatalog::DECIMAL ) ||
                             (column.dataType == CalpontSystemCatalog::UDECIMAL) )
                     {
@@ -662,6 +650,12 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
             else if ( origVal > static_cast<int64_t>(column.fMaxIntSat) )
             {
                 origVal = static_cast<int64_t>(column.fMaxIntSat);
+                bSatVal = true;
+            }
+            else if ( origVal == 0
+                && isTrueWord(const_cast<const char*>(field), fieldLength) )
+            {
+                origVal = 1;
                 bSatVal = true;
             }
 
@@ -722,15 +716,8 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
                 {
                     errno   = 0;
 
-                    if (iequals(field, "true"))
-                    {
-                        origVal = 1;
-                    }
-                    else
-                    {
-                        origVal = strtoll(field, 0, 10);
-                    }
-
+                    origVal = strtoll(field, 0, 10);
+                    
                     if (errno == ERANGE)
                         bSatVal = true;
                 }
@@ -745,6 +732,12 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
             else if ( origVal > static_cast<int64_t>(column.fMaxIntSat) )
             {
                 origVal = static_cast<int64_t>(column.fMaxIntSat);
+                bSatVal = true;
+            }
+            else if ( origVal == 0
+                && isTrueWord(const_cast<const char*>(field), fieldLength) )
+            {
+                origVal = 1;
                 bSatVal = true;
             }
 
@@ -805,12 +798,6 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
                 }
                 else
                 {
-                    if (iequals(field, "true"))
-                    {
-                        strcpy(field, "1");
-                        fieldLength = 1;
-                    }
-
                     if ( (column.dataType == CalpontSystemCatalog::DECIMAL ) ||
                             (column.dataType == CalpontSystemCatalog::UDECIMAL))
                     {
@@ -838,6 +825,12 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
             else if ( origVal > static_cast<int64_t>(column.fMaxIntSat) )
             {
                 origVal = static_cast<int64_t>(column.fMaxIntSat);
+                bSatVal = true;
+            }
+            else if ( origVal == 0
+                && isTrueWord(const_cast<const char*>(field), fieldLength) )
+            {
+                origVal = 1;
                 bSatVal = true;
             }
 
@@ -898,14 +891,7 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
                 {
                     errno   = 0;
 
-                    if (iequals(field, "true"))
-                    {
-                        origVal = 1;
-                    }
-                    else
-                    {
-                        origVal = strtoll(field, 0, 10);
-                    }
+                    origVal = strtoll(field, 0, 10);
 
                     if (errno == ERANGE)
                         bSatVal = true;
@@ -921,6 +907,12 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
             else if ( origVal > static_cast<int64_t>(column.fMaxIntSat) )
             {
                 origVal = static_cast<int64_t>(column.fMaxIntSat);
+                bSatVal = true;
+            }
+            else if ( origVal == 0
+                && isTrueWord(const_cast<const char*>(field), fieldLength) )
+            {
+                origVal = 1;
                 bSatVal = true;
             }
 
@@ -981,12 +973,6 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
                     }
                     else
                     {
-                        if (iequals(field, "true"))
-                        {
-                            strcpy(field, "1");
-                            fieldLength = 1;
-                        }
-
                         if ( (column.dataType == CalpontSystemCatalog::DECIMAL) ||
                                 (column.dataType == CalpontSystemCatalog::UDECIMAL))
                         {
@@ -1015,6 +1001,12 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
                 {
                     // llVal can be > fMaxIntSat if this is a decimal column
                     llVal   = static_cast<int64_t>(column.fMaxIntSat);
+                    bSatVal = true;
+                }
+                else if ( llVal == 0
+                    && isTrueWord(const_cast<const char*>(field), fieldLength) )
+                {
+                    llVal = 1;
                     bSatVal = true;
                 }
 
@@ -1199,14 +1191,7 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
                     {
                         errno = 0;
 
-                        if (iequals(field, "true"))
-                        {
-                            ullVal = 1;
-                        }
-                        else
-                        {
-                            ullVal = strtoull(field, 0, 10);
-                        }
+                        ullVal = strtoull(field, 0, 10);
 
                         if (errno == ERANGE)
                             bSatVal = true;
@@ -1218,6 +1203,12 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
             if ( ullVal > column.fMaxIntSat )
             {
                 ullVal = column.fMaxIntSat;
+                bSatVal = true;
+            }
+            else if ( ullVal == 0
+                && isTrueWord(const_cast<const char*>(field), fieldLength) )
+            {
+                ullVal = 1;
                 bSatVal = true;
             }
 
@@ -1276,14 +1267,7 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
                 {
                     errno   = 0;
 
-                    if (iequals(field, "true"))
-                    {
-                        origVal = 1;
-                    }
-                    else
-                    {
-                        origVal = strtoll(field, 0, 10);
-                    }
+                    origVal = strtoll(field, 0, 10);
 
                     if (errno == ERANGE)
                         bSatVal = true;
@@ -1299,6 +1283,12 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
             else if ( origVal > static_cast<int64_t>(column.fMaxIntSat) )
             {
                 origVal = static_cast<int64_t>(column.fMaxIntSat);
+                bSatVal = true;
+            }
+            else if ( origVal == 0
+                && isTrueWord(const_cast<const char*>(field), fieldLength) )
+            {
+                origVal = 1;
                 bSatVal = true;
             }
 
@@ -1361,12 +1351,6 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
                     }
                     else
                     {
-                        if (iequals(field, "true"))
-                        {
-                            strcpy(field, "1");
-                            fieldLength = 1;
-                        }
-
                         if ( (column.dataType == CalpontSystemCatalog::DECIMAL) ||
                                 (column.dataType == CalpontSystemCatalog::UDECIMAL))
                         {
@@ -1394,6 +1378,12 @@ void BulkLoadBuffer::convert(char* field, int fieldLength,
                 else if ( origVal > static_cast<int64_t>(column.fMaxIntSat) )
                 {
                     origVal = static_cast<int64_t>(column.fMaxIntSat);
+                    bSatVal = true;
+                }
+                else if ( origVal == 0
+                    && isTrueWord(const_cast<const char*>(field), fieldLength) )
+                {
+                    origVal = 1;
                     bSatVal = true;
                 }
 
