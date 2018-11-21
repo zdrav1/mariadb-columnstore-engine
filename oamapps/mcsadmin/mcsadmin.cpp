@@ -3490,10 +3490,27 @@ int processCommand(string* arguments)
             // covert second argument (level) into lowercase
             transform (arguments[2].begin(), arguments[2].end(), arguments[2].begin(), to_lower());
 
+            if ( !rootUser)
+            {
+                // confirm request
+                cout << endl << "Non-root user: You will be required to restart the Syslog Logging Process as root user";
+                if (confirmPrompt("to complete this command. "))
+                    break;
+            }
+
             try
             {
                 oam.updateLog(ENABLEDSTATE, arguments[1], arguments[2]);
                 cout << endl << "   Successful Enabling of Logging " << endl << endl;
+
+				if ( !rootUser)
+				{
+					string SystemLogProcess;
+					oam.getSystemConfig("SystemLogProcess", SystemLogProcess);
+
+					// reminder
+					cout << endl << "Reminder: Restart the Syslog Logging Process of " << SystemLogProcess << endl << endl;
+				}
             }
             catch (exception& e)
             {
@@ -3514,10 +3531,27 @@ int processCommand(string* arguments)
             // covert second argument (level) into lowercase
             transform (arguments[2].begin(), arguments[2].end(), arguments[2].begin(), to_lower());
 
+            if ( !rootUser)
+            {
+                // confirm request
+                cout << endl << "Non-root user: You will be required to restart the Syslog Logging Process as root user";
+                if (confirmPrompt("to complete this command. "))
+                    break;
+            }
+
             try
             {
                 oam.updateLog(MANDISABLEDSTATE, arguments[1], arguments[2]);
                 cout << endl << "   Successful Disabling of Logging " << endl << endl;
+
+				if ( !rootUser)
+				{
+					string SystemLogProcess;
+					oam.getSystemConfig("SystemLogProcess", SystemLogProcess);
+
+					// reminder
+					cout << endl << "Reminder: Restart the Syslog Logging Process of " << SystemLogProcess << endl << endl;
+				}
             }
             catch (exception& e)
             {
@@ -3960,10 +3994,13 @@ int processCommand(string* arguments)
 
                 string configFileName;
                 oam.getSystemConfig("SystemLogConfigFile", configFileName);
+				string SystemLogProcess;
+				oam.getSystemConfig("SystemLogProcess", SystemLogProcess);
 
                 cout << endl << "MariaDB ColumnStore System Log Configuration Data" << endl << endl;
 
-                cout << "System Logging Configuration File being used: " <<  configFileName << endl << endl;
+                cout << "System Logging Process running: " <<  SystemLogProcess << endl << endl;
+                cout << "System Logging Configuration File being used: " <<  configFileName << endl;
 
                 cout << "Module    Configured Log Levels" << endl;
                 cout << "------    ---------------------------------------" << endl;

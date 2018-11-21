@@ -475,6 +475,7 @@
 		<DistributedInstall>n</DistributedInstall>
 		<LockFileDirectory>/var/lock/subsys</LockFileDirectory>
 		<ProfileFile>unassigned</ProfileFile>
+		<SystemLogProcess>unassigned</SystemLogProcess>
 	</Installation>
 	<ExtentMap>
 		<!--

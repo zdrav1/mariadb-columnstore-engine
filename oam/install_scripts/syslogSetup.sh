@@ -170,6 +170,7 @@ makeDir
 checkSyslog
 if [ ! -z "$syslog_conf" ] ; then
 	$installdir/bin/setConfig -d Installation SystemLogConfigFile ${syslog_conf} >/dev/null 2>&1
+	$installdir/bin/setConfig -d Installation SystemLogProcess ${daemon} >/dev/null 2>&1
 	if [ $user != "root" ]; then
 		 chown $user:$user /home/$user/mariadb/columnstore/etc/*
 	fi 
@@ -217,7 +218,7 @@ if [ ! -z "$syslog_conf" ] ; then
 
 	# install Columnstore Log Rotate File
 	 cp $installdir/bin/columnstoreLogRotate /etc/logrotate.d/columnstore > /dev/null 2>&1
-	 chmod 644 /etc/logrotate.d/columnstore
+	 chmod 666 /etc/logrotate.d/columnstore
 
 	restartSyslog
 fi

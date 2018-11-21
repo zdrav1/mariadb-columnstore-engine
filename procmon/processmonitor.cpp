@@ -3207,7 +3207,7 @@ int ProcessMonitor::updateLog(std::string action, std::string level)
 
             if (!update)
             {
-                log.writeLog(__LINE__, "Log level file's already in syslog.conf", LOG_TYPE_DEBUG);
+                log.writeLog(__LINE__, "Log level file's already in " + fileName, LOG_TYPE_DEBUG);
                 restart = false;
             }
         }
@@ -3242,7 +3242,7 @@ int ProcessMonitor::updateLog(std::string action, std::string level)
 
                         if (pos != string::npos)
                         {
-                            log.writeLog(__LINE__, "Log level file already in syslog.conf", LOG_TYPE_DEBUG);
+                            log.writeLog(__LINE__, "Log level file already in " + fileName, LOG_TYPE_DEBUG);
                             restart = false;
                         }
 
@@ -3303,7 +3303,7 @@ int ProcessMonitor::updateLog(std::string action, std::string level)
 
             if (!update)
             {
-                log.writeLog(__LINE__, "No Log level file's in syslog.conf", LOG_TYPE_DEBUG);
+                log.writeLog(__LINE__, "No Log level file's in " + fileName, LOG_TYPE_DEBUG);
                 restart = false;
             }
         }
@@ -3340,7 +3340,7 @@ int ProcessMonitor::updateLog(std::string action, std::string level)
                         if (pos != string::npos)
                         {
                             // file found, don't push into new file
-                            log.writeLog(__LINE__, "Log level file to DISABLE found in syslog.conf", LOG_TYPE_DEBUG);
+                            log.writeLog(__LINE__, "Log level file to DISABLE found in " + fileName, LOG_TYPE_DEBUG);
                             found = true;
                         }
                         else
@@ -3354,7 +3354,7 @@ int ProcessMonitor::updateLog(std::string action, std::string level)
                         break;
                     else
                     {
-                        log.writeLog(__LINE__, "Log level file not in syslog.conf", LOG_TYPE_DEBUG);
+                        log.writeLog(__LINE__, "Log level file not in " + fileName, LOG_TYPE_DEBUG);
                         restart = false;
                     }
                 }
@@ -3403,7 +3403,8 @@ int ProcessMonitor::updateLog(std::string action, std::string level)
 
             close(fd);
 
-            oam.syslogAction("restart");
+			if (rootUser)
+				oam.syslogAction("restart");
         }
         else
         {
@@ -3440,7 +3441,7 @@ void ProcessMonitor::changeModLog()
         string logFile = oam::LogFile[i];
         string::size_type pos = logFile.find('/', 0);
         logFile = logFile.substr(pos, 200);
-        string cmd = "chmod 755 " + logFile + " > /dev/null 2>&1";
+        string cmd = "chmod 666 " + logFile + " > /dev/null 2>&1";
 
         system(cmd.c_str());
     }
