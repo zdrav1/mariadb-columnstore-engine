@@ -3441,7 +3441,7 @@ void ProcessMonitor::changeModLog()
         string logFile = oam::LogFile[i];
         string::size_type pos = logFile.find('/', 0);
         logFile = logFile.substr(pos, 200);
-        string cmd = "chmod 666 " + logFile + " > /dev/null 2>&1";
+        string cmd = "chmod 777 " + logFile + " > /dev/null 2>&1";
 
         system(cmd.c_str());
     }

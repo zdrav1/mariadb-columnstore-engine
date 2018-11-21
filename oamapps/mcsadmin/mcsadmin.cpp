@@ -3999,8 +3999,8 @@ int processCommand(string* arguments)
 
                 cout << endl << "MariaDB ColumnStore System Log Configuration Data" << endl << endl;
 
-                cout << "System Logging Process running: " <<  SystemLogProcess << endl << endl;
-                cout << "System Logging Configuration File being used: " <<  configFileName << endl;
+                cout << "System Logging Process running: " <<  SystemLogProcess << endl;
+                cout << "System Logging Configuration File being used: " <<  configFileName << endl << endl;
 
                 cout << "Module    Configured Log Levels" << endl;
                 cout << "------    ---------------------------------------" << endl;
@@ -4059,7 +4059,8 @@ int processCommand(string* arguments)
                 cout << endl << "**** getLogConfig Failed :  " << e.what() << endl;
                 break;
             }
-
+            
+            cout << endl;
         }
         break;
 
