@@ -140,7 +140,7 @@ PriorityThreadPool::Priority PriorityThreadPool::pickAQueue(Priority preference)
 void PriorityThreadPool::threadFcn(const Priority preferredQueue) throw()
 {
     Priority queue;
-    uint32_t weight, i;
+    uint32_t weight, i = 0;
     vector<Job> runList;
     vector<bool> reschedule;
     uint32_t rescheduleCount;
