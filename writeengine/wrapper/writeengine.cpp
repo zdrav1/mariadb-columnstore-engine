@@ -632,6 +632,7 @@ int WriteEngineWrapper::fillColumn(const TxnID& txnid, const OID& dataOid,
     Dctnry*   dctnry  = m_dctnry[op(compressionType)];
     colOpNewCol->initColumn(newCol);
     refColOp->initColumn(refCol);
+    int newDataWidth = dataWidth;
     //boost::shared_ptr<Dctnry> dctnry;
     // boost::shared_ptr<ColumnOp> refColOp;
     // refColOp.reset(colOpRefCol);
@@ -661,10 +662,13 @@ int WriteEngineWrapper::fillColumn(const TxnID& txnid, const OID& dataOid,
         isToken = true;
     }
 
+    newDataWidth = ( dataWidth == 1 && dataType == CalpontSystemCatalog::VARCHAR ) ? 1 :
+        colOpNewCol->getCorrectRowWidth(dataType, dataWidth);
+
     Convertor::convertColType(refColDataType, refColType, isToken);
     refColOp->setColParam(refCol, 0, refColOp->getCorrectRowWidth(refColDataType, refColWidth),
                           refColDataType, refColType, (FID)refColOID, refCompressionType, dbRoot);
-    colOpNewCol->setColParam(newCol, 0, colOpNewCol->getCorrectRowWidth(dataType, dataWidth),
+    colOpNewCol->setColParam(newCol, 0, newDataWidth,
                              dataType, newColType, (FID)dataOid, compressionType, dbRoot);
 
     int size = sizeof(Token);
