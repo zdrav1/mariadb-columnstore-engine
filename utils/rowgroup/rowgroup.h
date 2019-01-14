@@ -276,6 +276,7 @@ class Row
 		inline Pointer getPointer() const;
 
 		inline void nextRow();
+        inline void prevRow(uint32_t size, uint64_t number);
 		inline uint32_t getColumnWidth(uint32_t colIndex) const;
 		inline uint32_t getColumnCount() const;
 		inline uint32_t getSize() const;		// this is only accurate if there is no string table
@@ -760,6 +761,11 @@ inline void Row::setUintField_offset(uint64_t val, uint32_t offset)
 inline void Row::nextRow(uint32_t size)
 {
 	data += size;
+}
+
+inline void Row::prevRow(uint32_t size, uint64_t number = 1)
+{
+    data -= size * number;
 }
 
 template<int len>
