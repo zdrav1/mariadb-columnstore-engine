@@ -188,6 +188,9 @@ int FileOp::createFile( const char* fileName, int numOfBlock,
         }
         else
         {
+            // Disable optimization here b/c nobody uses
+            // uncompressed files and CS fails with 0 byte
+            // segment files.
             rc = initColumnExtent( pFile,
                                    dbRoot,
                                    numOfBlock,
@@ -195,7 +198,8 @@ int FileOp::createFile( const char* fileName, int numOfBlock,
                                    width,
                                    true,    // new file
                                    false,   // don't expand; add new extent
-                                   true );  // add abbreviated extent
+                                   true,    // add abbreviated extent
+                                   false ); // disable optimization
         }
 
         closeFile( pFile );
@@ -992,7 +996,8 @@ int FileOp::addExtentExactFile(
                            width,
                            newFile, // new or existing file
                            false,   // don't expand; new extent
-                           false ); // add full (not abbreviated) extent
+                           false,   // add full (not abbreviated) extent
+                           true ); // optimize the creation
 
     closeFile( pFile );
     return rc;
@@ -1118,9 +1123,7 @@ int FileOp::initColumnExtent(
         int savedErrno = 0;
         // MCOL-498 fallocate the abbreviated extent,
         // fallback to sequential write if fallocate failed
-        if ( !bOptExtension || ( nBlocks <= MAX_INITIAL_EXTENT_BLOCKS_TO_DISK
-            && pFile->fallocate(0, currFileSize, writeSize) )
-        )
+        if ( !bOptExtension && pFile->fallocate(0, currFileSize, writeSize) )
         {
             savedErrno = errno;
             // Log the failed fallocate() call result
@@ -1235,8 +1238,8 @@ int FileOp::initAbbrevCompColumnExtent(
                                width,
                                true,   // new file
                                false,  // don't expand; add new extent
-                               true ); // add abbreviated extent
-
+                               true, // add abbreviated extent
+                               true ); // optimize the creation
     if (rc != NO_ERROR)
     {
         return rc;

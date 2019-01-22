@@ -92,6 +92,15 @@ public:
                                     execplan::CalpontSystemCatalog::ColDataType colDataType,
                                     uint64_t emptyVal = 0, int width = 1 ) ;
 
+
+    /**
+     * @brief Create a file with a fixed file size by its name.
+     * Changed to public for UT.
+     */
+    int                 createFile( const char* fileName, int fileSize,
+                                    uint64_t emptyVal, int width,
+                                    uint16_t dbRoot );
+
     /**
      * @brief Delete a file
      */
@@ -478,10 +487,6 @@ private:
     //not copyable
     FileOp(const FileOp& rhs);
     FileOp& operator=(const FileOp& rhs);
-
-    int                 createFile( const char* fileName, int fileSize,
-                                    uint64_t emptyVal, int width,
-                                    uint16_t dbRoot );
 
     int                 expandAbbrevColumnChunk( IDBDataFile* pFile,
             uint64_t   emptyVal,

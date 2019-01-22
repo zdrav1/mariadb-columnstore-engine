@@ -29,18 +29,24 @@ using namespace boost;
 
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <we_dbfileop.h>
-#include <we_type.h>
-#include <we_semop.h>
-#include <we_log.h>
-#include <we_convertor.h>
-#include <we_brm.h>
-#include <we_cache.h>
+#include "we_dbfileop.h"
+#include "we_type.h"
+//#include "we_semop.h"
+#include "we_log.h"
+#include "we_convertor.h"
+#include "we_brm.h"
+#include "we_cache.h"
+#include "IDBDataFile.h"
+#include "IDBPolicy.h"
+#include "idbcompress.h"
+#include "calpontsystemcatalog.h"
 
+using namespace compress;
+using namespace idbdatafile;
 using namespace WriteEngine;
 using namespace BRM;
 
-int compare (const void* a, const void* b)
+/*int compare (const void* a, const void* b)
 {
     return ( *(uint32_t*)a - * (uint32_t*)b );
 }
@@ -49,51 +55,53 @@ int compare1(const void* a, const void* b)
 {
     return ( (*(SortTuple*)a).key - (*(SortTuple*)b).key );
 }
-
+*/
 
 class SharedTest : public CppUnit::TestFixture
 {
 
-    CPPUNIT_TEST_SUITE( SharedTest );
+      CPPUNIT_TEST_SUITE( SharedTest );
 
-//CPPUNIT_TEST(setUp);
+CPPUNIT_TEST(setUp);
 //CPPUNIT_TEST( test1 );
 
 // File operation testing
-    CPPUNIT_TEST( testFileNameOp );
-    CPPUNIT_TEST( testFileHandleOp );
-    CPPUNIT_TEST( testDirBasic );
+//    CPPUNIT_TEST( testFileNameOp );
+//    CPPUNIT_TEST( testFileHandleOp );
+//    CPPUNIT_TEST( testDirBasic );
 
 // Data block related testing
-    CPPUNIT_TEST( testCalculateRowIdBitmap );
-    CPPUNIT_TEST( testBlockBuffer );
-    CPPUNIT_TEST( testBitBasic );
-    CPPUNIT_TEST( testBufferBit );
-    CPPUNIT_TEST( testBitShift );
-    CPPUNIT_TEST( testEmptyRowValue );
-    CPPUNIT_TEST( testCorrectRowWidth );
+//    CPPUNIT_TEST( testCalculateRowIdBitmap );
+//    CPPUNIT_TEST( testBlockBuffer );
+//    CPPUNIT_TEST( testBitBasic );
+//    CPPUNIT_TEST( testBufferBit );
+//    CPPUNIT_TEST( testBitShift );
+//    CPPUNIT_TEST( testEmptyRowValue );
+//    CPPUNIT_TEST( testCorrectRowWidth );
 // DB File Block related testing
-    CPPUNIT_TEST( testDbBlock );
+//    CPPUNIT_TEST( testDbBlock );
 
-    CPPUNIT_TEST( testCopyDbFile );
+//    CPPUNIT_TEST( testCopyDbFile );
 
+// Extent related testing
+    CPPUNIT_TEST( testExtentCrWOPrealloc );
 // Semaphore related testing
-    CPPUNIT_TEST( testSem );
+//    CPPUNIT_TEST( testSem );
 
 // Log related testing
-    CPPUNIT_TEST( testLog );
+//    CPPUNIT_TEST( testLog );
 
 // Version Buffer related testing
-    CPPUNIT_TEST( testHWM );
-    CPPUNIT_TEST( testVB );
+//    CPPUNIT_TEST( testHWM );
+//    CPPUNIT_TEST( testVB );
 
 // Disk manager related testing
-    CPPUNIT_TEST( testDM );
-    CPPUNIT_TEST( tearDown );
+//    CPPUNIT_TEST( testDM );
+//    CPPUNIT_TEST( tearDown );
 
 // Cache related testing
-    CPPUNIT_TEST( testCacheBasic );
-    CPPUNIT_TEST( testCacheReadWrite );
+//    CPPUNIT_TEST( testCacheBasic );
+//    CPPUNIT_TEST( testCacheReadWrite );
 
     CPPUNIT_TEST( testCleanup );   // NEVER COMMENT OUT THIS LINE
     CPPUNIT_TEST_SUITE_END();
@@ -139,7 +147,7 @@ public:
             }
         }
     }
-
+/*
     void testFileNameOp()
     {
         FileOp   fileOp;
@@ -374,23 +382,23 @@ public:
         CPPUNIT_ASSERT( bio == 16 );
 
         // Assuming 2048 per data block, 4 byte width
-        /*      rowId = 2049;
-              CPPUNIT_ASSERT( blockOp.calculateRowId( rowId, 2048, 4, fbo, bio ) == true );
-              CPPUNIT_ASSERT( fbo == 1 );
-              CPPUNIT_ASSERT( bio == 16 );
-
-              // Assuming 4096 per data block, 2 byte width
-              rowId = 2049;
-              CPPUNIT_ASSERT( blockOp.calculateRowId( rowId, 4096, 2, fbo, bio ) == true );
-              CPPUNIT_ASSERT( fbo == 1 );
-              CPPUNIT_ASSERT( bio == 16 );
-
-              // Assuming 8192 per data block, 1 byte width
-              rowId = 2049;
-              CPPUNIT_ASSERT( blockOp.calculateRowId( rowId, 8192, 1, fbo, bio ) == true );
-              CPPUNIT_ASSERT( fbo == 1 );
-              CPPUNIT_ASSERT( bio == 16 );
-        */
+//              rowId = 2049;
+//              CPPUNIT_ASSERT( blockOp.calculateRowId( rowId, 2048, 4, fbo, bio ) == true );
+//              CPPUNIT_ASSERT( fbo == 1 );
+//              CPPUNIT_ASSERT( bio == 16 );
+//
+//              // Assuming 4096 per data block, 2 byte width
+//              rowId = 2049;
+//              CPPUNIT_ASSERT( blockOp.calculateRowId( rowId, 4096, 2, fbo, bio ) == true );
+//              CPPUNIT_ASSERT( fbo == 1 );
+//              CPPUNIT_ASSERT( bio == 16 );
+//
+//              // Assuming 8192 per data block, 1 byte width
+//              rowId = 2049;
+//              CPPUNIT_ASSERT( blockOp.calculateRowId( rowId, 8192, 1, fbo, bio ) == true );
+//              CPPUNIT_ASSERT( fbo == 1 );
+//              CPPUNIT_ASSERT( bio == 16 );
+//        
         rowId = 65546;
         CPPUNIT_ASSERT( blockOp.calculateRowBitmap( rowId, BYTE_PER_BLOCK * 8, fbo, bio, bbo ) == true );
         CPPUNIT_ASSERT( fbo == 1 );
@@ -550,19 +558,19 @@ public:
 
         curVal = blockOp.getEmptyRowValue( WriteEngine::DECIMAL, 8 );
         CPPUNIT_ASSERT( curVal == 0x8000000000000001LL );
-        /*
-              curVal = blockOp.getEmptyRowValue( WriteEngine::DECIMAL, 9 );
-              CPPUNIT_ASSERT( curVal == 0x80000001 );
-
-              curVal = blockOp.getEmptyRowValue( WriteEngine::DECIMAL, 10 );
-              CPPUNIT_ASSERT( curVal == 0x8000000000000001LL );
-
-              curVal = blockOp.getEmptyRowValue( WriteEngine::DECIMAL, 12 );
-              CPPUNIT_ASSERT( curVal == 0x8000000000000001LL );
-
-              curVal = blockOp.getEmptyRowValue( WriteEngine::DECIMAL, 19 );
-              CPPUNIT_ASSERT( curVal == 0xFFFFFFFFFFFFFFFFLL );
-        */
+        
+//              curVal = blockOp.getEmptyRowValue( WriteEngine::DECIMAL, 9 );
+//              CPPUNIT_ASSERT( curVal == 0x80000001 );
+//
+//              curVal = blockOp.getEmptyRowValue( WriteEngine::DECIMAL, 10 );
+//              CPPUNIT_ASSERT( curVal == 0x8000000000000001LL );
+//
+//              curVal = blockOp.getEmptyRowValue( WriteEngine::DECIMAL, 12 );
+//              CPPUNIT_ASSERT( curVal == 0x8000000000000001LL );
+//
+//              curVal = blockOp.getEmptyRowValue( WriteEngine::DECIMAL, 19 );
+//              CPPUNIT_ASSERT( curVal == 0xFFFFFFFFFFFFFFFFLL );
+//        
         curVal = blockOp.getEmptyRowValue( WriteEngine::DATE, 4 );
         CPPUNIT_ASSERT( curVal == 0xFFFFFFFF );
 
@@ -645,18 +653,18 @@ public:
         curVal = blockOp.getCorrectRowWidth( WriteEngine::DECIMAL, 8 );
         CPPUNIT_ASSERT( curVal == 8 );
 
-        /*      curVal = blockOp.getCorrectRowWidth( WriteEngine::DECIMAL, 9 );
-              CPPUNIT_ASSERT( curVal == 4 );
-
-              curVal = blockOp.getCorrectRowWidth( WriteEngine::DECIMAL, 10 );
-              CPPUNIT_ASSERT( curVal == 8 );
-
-              curVal = blockOp.getCorrectRowWidth( WriteEngine::DECIMAL, 12 );
-              CPPUNIT_ASSERT( curVal == 8 );
-
-              curVal = blockOp.getCorrectRowWidth( WriteEngine::DECIMAL, 19 );
-              CPPUNIT_ASSERT( curVal == 8 );
-        */
+//              curVal = blockOp.getCorrectRowWidth( WriteEngine::DECIMAL, 9 );
+//              CPPUNIT_ASSERT( curVal == 4 );
+//
+//              curVal = blockOp.getCorrectRowWidth( WriteEngine::DECIMAL, 10 );
+//              CPPUNIT_ASSERT( curVal == 8 );
+//
+//              curVal = blockOp.getCorrectRowWidth( WriteEngine::DECIMAL, 12 );
+//              CPPUNIT_ASSERT( curVal == 8 );
+//
+//              curVal = blockOp.getCorrectRowWidth( WriteEngine::DECIMAL, 19 );
+//              CPPUNIT_ASSERT( curVal == 8 );
+//        
         curVal = blockOp.getCorrectRowWidth( WriteEngine::DATE, 8 );
         CPPUNIT_ASSERT( curVal == 4 );
 
@@ -892,6 +900,61 @@ public:
         dbFileOp.closeFile( pTargetFile );
 
     }
+*/
+    void testExtentCrWOPrealloc()
+    {
+        IDBDataFile* pFile = NULL;
+        FileOp   fileOp;
+        BlockOp   blockOp;
+        char     fileName[20];
+        int      rc;
+        char hdrs[ IDBCompressInterface::HDR_BUF_LEN * 2 ];
+        //const char *createGoldenMd5 = "b805401facf8fea2ad35d299694f4745";
+        const char *createGoldenMd5 = "83db5a7138beefdd074091cac06a4ffd";
+
+        //idbdatafile::IDBPolicy::configIDBPolicy();
+        idbdatafile::IDBPolicy::init(true, false, "", 0);
+        // Set to versionbuffer to satisfy IDBPolicy::getType
+        strcpy( fileName, "versionbuffer" );
+        fileOp.compressionType(1);
+
+        fileOp.deleteFile( fileName );
+        CPPUNIT_ASSERT( fileOp.exists( fileName ) == false );
+
+        int width = blockOp.getCorrectRowWidth( execplan::CalpontSystemCatalog::BIGINT, 8 );
+        int nBlocks = INITIAL_EXTENT_ROWS_TO_DISK / BYTE_PER_BLOCK * width;
+        uint64_t emptyVal = blockOp.getEmptyRowValue( execplan::CalpontSystemCatalog::BIGINT, 8 );
+        // createFile runs IDBDataFile::open + initAbrevCompColumnExtent
+        // under the hood
+        // bigint column file
+        rc = fileOp.createFile( fileName,
+            nBlocks, // number of blocks
+            emptyVal, // NULL value
+            width, // width
+            1 ); // dbroot
+        CPPUNIT_ASSERT( rc == NO_ERROR );
+
+        fileOp.closeFile(pFile);
+
+        // Extend the extent up to 64MB and compare with extendGoldenMd5
+
+
+
+        pFile = IDBDataFile::open(IDBPolicy::getType(fileName,
+            IDBPolicy::WRITEENG), fileName, "rb", 1);
+
+        rc = pFile->seek(0, 0);
+        CPPUNIT_ASSERT(rc == NO_ERROR);
+        rc = fileOp.readHeaders(pFile, hdrs);
+        CPPUNIT_ASSERT( rc == NO_ERROR );
+        // Couldn't use IDBDataFile->close() here w/o excplicit cast
+        fileOp.closeFile(pFile);
+
+//        fileOp.deleteFile( fileName );
+//        CPPUNIT_ASSERT( fileOp.exists( fileName ) == false );
+    }
+
+/*
 
     void testSem()
     {
@@ -1375,6 +1438,7 @@ public:
         }
 
     }
+*/
 
     void testCleanup()
     {
