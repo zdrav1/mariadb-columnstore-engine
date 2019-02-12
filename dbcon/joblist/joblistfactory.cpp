@@ -558,9 +558,13 @@ void checkGroupByCols(CalpontSelectExecutionPlan* csep, JobInfo& jobInfo)
 			if (csep->groupByCols().size() > 0)
 			{
 				// Not an aggregate column and not an expression of aggregation.
-				if (dynamic_cast<AggregateColumn*>(orderByCols[i].get()) == NULL &&
-					orderByCols[i]->aggColumnList().empty())
-					csep->groupByCols().push_back(orderByCols[i]);
+                if (dynamic_cast<AggregateColumn*>(orderByCols[i].get()) == NULL &&
+                        orderByCols[i]->aggColumnList().empty())
+                { } // noop
+                else
+                {
+                    csep->groupByCols().push_back(orderByCols[i]);
+                }
 			}
 		}
 	}
